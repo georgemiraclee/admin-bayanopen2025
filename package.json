@@ -1,0 +1,36 @@
+{
+  "name": "desktop-bayanadmin",
+  "version": "1.1.1",
+  "description": "Desktop Application for Bayan Admin",
+  "main": "main.js",
+  "author": "George Miracle",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "electron": "^37.2.4",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.bayan.adminapp",
+    "productName": "Bayan Open Admin App",
+    "icon":"bayanopen.ico",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

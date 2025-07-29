@@ -11,32 +11,17 @@
     #ip-manager-trigger {
       position: fixed;
       left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 24px;
-      height: 60px;
-      background: rgba(30, 58, 138, 0.9);
-      border-radius: 0 12px 12px 0;
+      top: 0;
+      width: 15px;
+      height: 100vh;
+      background: transparent;
       cursor: pointer;
       z-index: 10001;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 12px;
-      font-weight: 600;
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.3);
       transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     #ip-manager-trigger:hover {
-      width: 28px;
-      background: rgba(30, 58, 138, 1);
-      box-shadow: 2px 0 15px rgba(30, 58, 138, 0.4);
+      background: rgba(30, 58, 138, 0.1);
     }
 
     #ip-manager-sidebar {
@@ -323,11 +308,10 @@
   styleSheet.textContent = styles;
   document.head.appendChild(styleSheet);
 
-  // Create trigger button
+  // Create transparent trigger area
   const trigger = document.createElement('div');
   trigger.id = 'ip-manager-trigger';
-  trigger.innerHTML = 'IP';
-  trigger.title = 'Manage IP Servers';
+  trigger.title = 'Click to manage IP servers';
   document.body.appendChild(trigger);
 
   // Create sidebar
@@ -397,16 +381,6 @@
         notification.remove();
       }
     }, 3000);
-  }
-
-  // Notification helper function for app notifications
-  function showAppNotification(title, message, options = {}) {
-    if (window.electronAPI && window.electronAPI.showNotification) {
-      window.electronAPI.showNotification(title, message, options);
-    } else {
-      // Fallback to regular notification
-      showNotification(`${title}: ${message}`, options.urgency === 'normal' ? 'warning' : 'success');
-    }
   }
 
   // Core functions
@@ -763,100 +737,6 @@
     }
   }
 
-  // Monitor for Reset Match button
-  function monitorResetMatch() {
-    document.addEventListener('click', (event) => {
-      const target = event.target;
-      const buttonText = target.textContent?.trim() || '';
-      const className = target.className || '';
-      
-      if (buttonText.includes('Reset Match') || 
-          buttonText.includes('Reset') ||
-          className.includes('reset') ||
-          target.id?.includes('reset')) {
-        
-        showAppNotification(
-          'Match Telah Di-Reset',
-          'Pertandingan telah direset dan siap untuk dimulai kembali.',
-          { duration: 4000, urgency: 'low' }
-        );
-      }
-    });
-
-    document.addEventListener('submit', (event) => {
-      const form = event.target;
-      const formData = new FormData(form);
-      
-      for (let [key, value] of formData.entries()) {
-        if (key.includes('reset') || value.toString().includes('reset')) {
-          showAppNotification(
-            'Data Telah Di-Reset',
-            'Data pertandingan telah direset melalui form.',
-            { duration: 3000, urgency: 'low' }
-          );
-          break;
-        }
-      }
-    });
-  }
-
-  // Monitor for specific UI elements (Reset buttons only)
-  function monitorSpecificElements() {
-    const checkResetButtons = () => {
-      const resetButtons = document.querySelectorAll(
-        'button, .btn, [role="button"], input[type="button"], input[type="submit"]'
-      );
-      
-      resetButtons.forEach(button => {
-        if (!button.dataset.monitored) {
-          const buttonText = button.textContent?.trim() || button.value || '';
-          
-          if (buttonText.includes('Reset') || buttonText.includes('reset')) {
-            button.dataset.monitored = 'true';
-            
-            button.addEventListener('click', () => {
-              showAppNotification(
-                'Reset Match',
-                'Pertandingan telah direset dan siap untuk dimulai kembali.',
-                { duration: 4000, urgency: 'low' }
-              );
-            });
-          }
-        }
-      });
-    };
-
-    // Run checks periodically for dynamically loaded content
-    const intervalId = setInterval(() => {
-      checkResetButtons();
-    }, 2000);
-
-    // Clean up interval after 30 seconds to avoid memory leaks
-    setTimeout(() => {
-      clearInterval(intervalId);
-    }, 30000);
-
-    // Initial check
-    checkResetButtons();
-  }
-
-  // Initialize monitoring when DOM is ready
-  function initializeMonitoring() {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          monitorResetMatch();
-          monitorSpecificElements();
-        }, 1000);
-      });
-    } else {
-      setTimeout(() => {
-        monitorResetMatch();
-        monitorSpecificElements();
-      }, 1000);
-    }
-  }
-
   // Event listeners setup
   function setupEventListeners() {
     // Main trigger
@@ -994,7 +874,6 @@
     setupOutsideClickHandler();
     setupKeyboardShortcuts();
     setupAutoRefresh();
-    initializeMonitoring();
     
     console.log('IP Manager Sidebar injected successfully');
   }

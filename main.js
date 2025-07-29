@@ -637,7 +637,7 @@ function createMenu() {
       submenu: [
         {
           label: 'Zoom In',
-          accelerator: 'CmdOrCtrl+Plus',
+          accelerator: 'CmdOrCtrl+P',
           click: () => {
             if (ipManager.currentWindow && !ipManager.currentWindow.isDestroyed()) {
               try {

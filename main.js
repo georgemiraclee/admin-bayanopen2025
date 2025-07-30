@@ -10,8 +10,10 @@ class IPManager {
   constructor() {
     this.config = this.loadConfig();
     this.currentWindow = null;
+    this.loginWindow = null;
     this.checkInterval = null;
     this.isReady = false;
+    this.isAuthenticated = false;
   }
 
   // Load konfigurasi dari file
@@ -44,7 +46,7 @@ class IPManager {
         { 
           id: 1, 
           name: 'Server Utama', 
-          ip: '10.2.97.74', 
+          ip: '10.2.97.84', 
           port: 3000, 
           active: true,
           lastChecked: null,
@@ -384,6 +386,47 @@ class IPManager {
 // Instance global
 const ipManager = new IPManager();
 
+// Create login window
+function createLoginWindow() {
+  const loginWin = new BrowserWindow({
+    width: 450,
+    height: 650,
+    resizable: false,
+    center: true,
+    frame: false,
+    transparent: true,
+    icon: path.join(__dirname, 'bayanopen.ico'),
+    show: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false
+    }
+  });
+
+  ipManager.loginWindow = loginWin;
+
+  // Load login page
+  const loginPath = path.join(__dirname, 'login.html');
+  loginWin.loadFile(loginPath);
+
+  // Show when ready
+  loginWin.webContents.once('did-finish-load', () => {
+    loginWin.show();
+    loginWin.focus();
+  });
+
+  // Handle window close
+  loginWin.on('closed', () => {
+    ipManager.loginWindow = null;
+    if (!ipManager.isAuthenticated) {
+      app.quit();
+    }
+  });
+
+  return loginWin;
+}
+
 function createWindow() {
   // Get primary display dimensions with error handling
   let screenWidth = 1920;
@@ -501,6 +544,20 @@ function createWindow() {
 
   return win;
 }
+
+// Handle login success
+ipcMain.on('login-success', () => {
+  ipManager.isAuthenticated = true;
+  
+  // Close login window
+  if (ipManager.loginWindow) {
+    ipManager.loginWindow.close();
+  }
+  
+  // Create main window
+  createWindow();
+  createMenu();
+});
 
 // Enhanced IPC Handlers
 ipcMain.handle('get-servers', () => {
@@ -629,6 +686,20 @@ function createMenu() {
               ipManager.currentWindow.reload();
             }
           }
+        },
+        { type: 'separator' },
+        {
+          label: 'Logout',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => {
+            // Close main window and show login
+            if (ipManager.currentWindow) {
+              ipManager.currentWindow.close();
+            }
+            ipManager.isAuthenticated = false;
+            ipManager.stopAutoCheck();
+            createLoginWindow();
+          }
         }
       ]
     },
@@ -637,7 +708,7 @@ function createMenu() {
       submenu: [
         {
           label: 'Zoom In',
-          accelerator: 'CmdOrCtrl+P',
+          accelerator: 'CmdOrCtrl+B',
           click: () => {
             if (ipManager.currentWindow && !ipManager.currentWindow.isDestroyed()) {
               try {
@@ -651,7 +722,7 @@ function createMenu() {
         },
         {
           label: 'Zoom Out',
-          accelerator: 'CmdOrCtrl+-',
+          accelerator: 'CmdOrCtrl+K',
           click: () => {
             if (ipManager.currentWindow && !ipManager.currentWindow.isDestroyed()) {
               try {
@@ -699,8 +770,8 @@ function createMenu() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
-  createMenu();
+  // Start with login window
+  createLoginWindow();
 });
 
 app.on('window-all-closed', () => {
@@ -709,7 +780,13 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  if (BrowserWindow.getAllWindows().length === 0) {
+    if (ipManager.isAuthenticated) {
+      createWindow();
+    } else {
+      createLoginWindow();
+    }
+  }
 });
 
 // Handle app termination

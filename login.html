@@ -288,18 +288,6 @@
         
         <form id="loginForm">
             <div class="form-group">
-                <label class="form-label" for="username">Username</label>
-                <input 
-                    type="text" 
-                    id="username" 
-                    class="form-input" 
-                    placeholder="Masukkan username"
-                    required
-                    autocomplete="username"
-                >
-            </div>
-            
-            <div class="form-group">
                 <label class="form-label" for="password">Password</label>
                 <div class="password-container">
                     <input 
@@ -332,37 +320,17 @@
     <script>
         const { ipcRenderer } = require('electron');
         
-        // Credentials
-        const VALID_USERNAME = 'bayanopen2025';
+        // Password only credential
         const VALID_PASSWORD = 'Bayan123!';
         
         // Elements
         const loginForm = document.getElementById('loginForm');
-        const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const togglePassword = document.getElementById('togglePassword');
         const loginBtn = document.getElementById('loginBtn');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const buttonText = document.getElementById('buttonText');
         const errorMessage = document.getElementById('errorMessage');
-        const rememberMe = document.getElementById('rememberMe');
-
-        // Load saved credentials if remember me was checked
-        window.addEventListener('load', () => {
-            try {
-                const savedCredentials = localStorage.getItem('rememberedCredentials');
-                if (savedCredentials) {
-                    const { username, rememberChecked } = JSON.parse(savedCredentials);
-                    usernameInput.value = username || '';
-                    rememberMe.checked = rememberChecked || false;
-                    if (username) {
-                        passwordInput.focus();
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading saved credentials:', error);
-            }
-        });
 
         // Toggle password visibility
         togglePassword.addEventListener('click', () => {
@@ -398,15 +366,14 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = usernameInput.value.trim();
             const password = passwordInput.value;
             
             // Hide previous error
             errorMessage.style.display = 'none';
             
             // Validation
-            if (!username || !password) {
-                showError('Username dan password harus diisi!');
+            if (!password) {
+                showError('Password harus diisi!');
                 return;
             }
             
@@ -415,22 +382,8 @@
             // Simulate network delay for better UX
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // Check credentials
-            if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-                // Save credentials if remember me is checked
-                try {
-                    if (rememberMe.checked) {
-                        localStorage.setItem('rememberedCredentials', JSON.stringify({
-                            username: username,
-                            rememberChecked: true
-                        }));
-                    } else {
-                        localStorage.removeItem('rememberedCredentials');
-                    }
-                } catch (error) {
-                    console.error('Error saving credentials:', error);
-                }
-                
+            // Check password
+            if (password === VALID_PASSWORD) {
                 // Success animation
                 buttonText.textContent = 'Berhasil!';
                 loginBtn.style.background = 'linear-gradient(135deg, #27ae60, #2ecc71)';
@@ -442,7 +395,7 @@
                 
             } else {
                 setLoading(false);
-                showError('Username atau password salah!');
+                showError('Password salah!');
                 
                 // Shake animation for error
                 loginForm.style.animation = 'shake 0.5s ease-in-out';
@@ -456,27 +409,23 @@
             }
         });
 
-        // Auto focus username field
-        usernameInput.focus();
+        // Auto focus password field
+        passwordInput.focus();
 
-        // Handle Enter key in input fields
-        [usernameInput, passwordInput].forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    loginForm.dispatchEvent(new Event('submit'));
-                }
-            });
+        // Handle Enter key in password field
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginForm.dispatchEvent(new Event('submit'));
+            }
         });
 
-        // Add input animations
-        [usernameInput, passwordInput].forEach(input => {
-            input.addEventListener('focus', () => {
-                input.parentElement.style.transform = 'scale(1.02)';
-            });
-            
-            input.addEventListener('blur', () => {
-                input.parentElement.style.transform = 'scale(1)';
-            });
+        // Add input animation
+        passwordInput.addEventListener('focus', () => {
+            passwordInput.parentElement.style.transform = 'scale(1.02)';
+        });
+        
+        passwordInput.addEventListener('blur', () => {
+            passwordInput.parentElement.style.transform = 'scale(1)';
         });
     </script>
 </body>

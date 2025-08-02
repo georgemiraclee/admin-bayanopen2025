@@ -70,6 +70,140 @@
       padding: 20px;
     }
 
+    /* Login Form Styles */
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 100px);
+      padding: 20px;
+    }
+
+    .login-form {
+      background: rgba(0,0,0,0.4);
+      padding: 30px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      width: 100%;
+      max-width: 300px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .login-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: white;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 25px;
+      color: white;
+    }
+
+    .login-form-group {
+      margin-bottom: 20px;
+    }
+
+    .login-form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      opacity: 0.9;
+      color: white;
+    }
+
+    .login-form-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    .login-form-input:focus {
+      outline: none;
+      border-color: rgba(59, 130, 246, 0.8);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .login-form-input::placeholder {
+      color: rgba(255,255,255,0.5);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 10px;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      padding: 10px 15px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 15px;
+      text-align: center;
+      display: none;
+    }
+
+    .logout-btn {
+      position: absolute;
+      top: 15px;
+      right: 50px;
+      background: rgba(239, 68, 68, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .logout-btn:hover {
+      background: rgba(239, 68, 68, 1);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    }
+
     .server-list {
       margin-bottom: 20px;
     }
@@ -301,6 +435,11 @@
       from { transform: translateX(100%); }
       to { transform: translateX(0); }
     }
+
+    /* Hide main content when not authenticated */
+    .main-content.hidden {
+      display: none;
+    }
   `;
 
   // Inject styles
@@ -314,7 +453,7 @@
   trigger.title = 'Click to manage IP servers';
   document.body.appendChild(trigger);
 
-  // Create sidebar
+  // Create sidebar with login
   const sidebar = document.createElement('div');
   sidebar.id = 'ip-manager-sidebar';
   sidebar.innerHTML = `
@@ -323,10 +462,31 @@
         🌐 Admin IP Manager
       </h3>
       <p class="sidebar-subtitle">Bayan Open 2025</p>
+      <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
       <button class="close-btn" id="closeSidebarBtn">×</button>
     </div>
     
-    <div class="sidebar-content">
+    <!-- Login Container -->
+    <div class="login-container" id="login-container">
+      <div class="login-form">
+        <h3 class="login-title">🔐 Admin Access</h3>
+        <p class="login-subtitle">Enter password to continue</p>
+        
+        <div class="login-form-group">
+          <label class="login-form-label">Password</label>
+          <input type="password" class="login-form-input" id="login-password" placeholder="Enter admin password" autocomplete="current-password">
+        </div>
+        
+        <button class="login-btn" id="loginBtn">Access Manager</button>
+        
+        <div class="login-error" id="login-error">
+          Invalid password. Please try again.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Content (hidden by default) -->
+    <div class="sidebar-content main-content hidden" id="main-content">
       <div class="controls">
         <button class="btn btn-primary" id="checkAllBtn" style="width: 100%; margin-bottom: 10px;">
           🔄 Check All Servers
@@ -368,6 +528,10 @@
   let currentServer = null;
   let isOpen = false;
   let editingServerId = null;
+  let isAuthenticated = false;
+  
+  // Login credentials
+  const ADMIN_PASSWORD = 'okedeh123';
   
   // Notification system
   function showNotification(message, type = 'success') {
@@ -383,12 +547,98 @@
     }, 3000);
   }
 
+  // Authentication functions
+  function showLoginError() {
+    const errorDiv = document.getElementById('login-error');
+    if (errorDiv) {
+      errorDiv.style.display = 'block';
+      setTimeout(() => {
+        errorDiv.style.display = 'none';
+      }, 3000);
+    }
+  }
+
+  function authenticate() {
+    const passwordInput = document.getElementById('login-password');
+    
+    if (!passwordInput) {
+      showNotification('Login form elements not found', 'error');
+      return false;
+    }
+
+    const password = passwordInput.value;
+
+    if (password === ADMIN_PASSWORD) {
+      isAuthenticated = true;
+      
+      // Hide login container and show main content
+      const loginContainer = document.getElementById('login-container');
+      const mainContent = document.getElementById('main-content');
+      const logoutBtn = document.getElementById('logoutBtn');
+      
+      if (loginContainer) loginContainer.style.display = 'none';
+      if (mainContent) mainContent.classList.remove('hidden');
+      if (logoutBtn) logoutBtn.style.display = 'block';
+      
+      // Clear login form
+      passwordInput.value = '';
+      
+      showNotification('Login successful! Welcome Admin.', 'success');
+      loadServers();
+      return true;
+    } else {
+      showLoginError();
+      showNotification('Invalid password', 'error');
+      
+      // Clear password field
+      passwordInput.value = '';
+      passwordInput.focus();
+      return false;
+    }
+  }
+
+  function logout() {
+    isAuthenticated = false;
+    
+    // Show login container and hide main content
+    const loginContainer = document.getElementById('login-container');
+    const mainContent = document.getElementById('main-content');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    if (loginContainer) loginContainer.style.display = 'flex';
+    if (mainContent) mainContent.classList.add('hidden');
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    
+    // Clear any open forms
+    const addServerForm = document.getElementById('add-server-form');
+    if (addServerForm) addServerForm.style.display = 'none';
+    editingServerId = null;
+    clearForm();
+    
+    showNotification('Logged out successfully', 'warning');
+    
+    // Focus on password field
+    const passwordInput = document.getElementById('login-password');
+    if (passwordInput) {
+      setTimeout(() => passwordInput.focus(), 100);
+    }
+  }
+
   // Core functions
   function toggleSidebar() {
     isOpen = !isOpen;
     sidebar.classList.toggle('active', isOpen);
+    
     if (isOpen) {
-      loadServers();
+      if (isAuthenticated) {
+        loadServers();
+      } else {
+        // Focus on password input when opening login
+        setTimeout(() => {
+          const passwordInput = document.getElementById('login-password');
+          if (passwordInput) passwordInput.focus();
+        }, 300);
+      }
     }
   }
 
@@ -399,6 +649,8 @@
 
   // Form management functions
   function toggleAddForm() {
+    if (!isAuthenticated) return;
+    
     const form = document.getElementById('add-server-form');
     const formTitle = document.getElementById('form-title');
     const saveBtn = document.getElementById('saveServerBtn');
@@ -436,6 +688,8 @@
 
   // Server management functions
   async function loadServers() {
+    if (!isAuthenticated) return;
+    
     try {
       if (window.electronAPI && window.electronAPI.getServers) {
         const serversData = await window.electronAPI.getServers();
@@ -459,6 +713,8 @@
   }
 
   function renderServerList() {
+    if (!isAuthenticated) return;
+    
     const serverList = document.getElementById('server-list');
     
     if (!serverList) return;
@@ -503,6 +759,8 @@
   }
 
   function handleServerAction(event) {
+    if (!isAuthenticated) return;
+    
     const action = event.target.dataset.action;
     const serverId = parseInt(event.target.dataset.serverId);
     
@@ -523,6 +781,8 @@
   }
 
   async function saveServer() {
+    if (!isAuthenticated) return;
+    
     const nameInput = document.getElementById('server-name');
     const ipInput = document.getElementById('server-ip');
     const portInput = document.getElementById('server-port');
@@ -587,6 +847,8 @@
   }
 
   async function switchToServer(serverId) {
+    if (!isAuthenticated) return;
+    
     try {
       if (window.electronAPI && window.electronAPI.setActiveServer) {
         const server = await window.electronAPI.setActiveServer(serverId);
@@ -610,6 +872,8 @@
   }
 
   async function checkServer(serverId) {
+    if (!isAuthenticated) return;
+    
     try {
       if (window.electronAPI && window.electronAPI.checkServerStatus) {
         const result = await window.electronAPI.checkServerStatus(serverId);
@@ -634,6 +898,8 @@
   }
 
   async function checkAllServers() {
+    if (!isAuthenticated) return;
+    
     try {
       const button = document.getElementById('checkAllBtn');
       if (!button) return;
@@ -670,6 +936,8 @@
   }
 
   function editServer(serverId) {
+    if (!isAuthenticated) return;
+    
     const server = servers.find(s => s.id === serverId);
     if (!server) {
       showNotification('Server not found', 'error');
@@ -705,6 +973,8 @@
   }
 
   async function deleteServer(serverId) {
+    if (!isAuthenticated) return;
+    
     const server = servers.find(s => s.id === serverId);
     if (!server) return;
 
@@ -749,14 +1019,42 @@
       const addServerBtn = document.getElementById('addServerBtn');
       const saveServerBtn = document.getElementById('saveServerBtn');
       const cancelFormBtn = document.getElementById('cancelFormBtn');
+      const loginBtn = document.getElementById('loginBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
 
+      // Basic navigation
       if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
+      
+      // Authentication
+      if (loginBtn) loginBtn.addEventListener('click', authenticate);
+      if (logoutBtn) logoutBtn.addEventListener('click', logout);
+      
+      // Server management (only work when authenticated)
       if (checkAllBtn) checkAllBtn.addEventListener('click', checkAllServers);
       if (addServerBtn) addServerBtn.addEventListener('click', toggleAddForm);
       if (saveServerBtn) saveServerBtn.addEventListener('click', saveServer);
       if (cancelFormBtn) cancelFormBtn.addEventListener('click', cancelForm);
 
-      // Form validation on input
+      // Login form validation and submission
+      const passwordInput = document.getElementById('login-password');
+
+      if (passwordInput) {
+        // Enter key submission for login
+        passwordInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            authenticate();
+          }
+        });
+
+        passwordInput.addEventListener('input', function() {
+          // Hide any visible error when typing password
+          const errorDiv = document.getElementById('login-error');
+          if (errorDiv) errorDiv.style.display = 'none';
+        });
+      }
+
+      // Server form validation
       const serverNameInput = document.getElementById('server-name');
       const serverIpInput = document.getElementById('server-ip');
       const serverPortInput = document.getElementById('server-port');
@@ -786,12 +1084,12 @@
         });
       }
 
-      // Enable form submission with Enter key
+      // Enable form submission with Enter key for server form
       const formInputs = [serverNameInput, serverIpInput, serverPortInput];
       formInputs.forEach(input => {
         if (input) {
           input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && isAuthenticated) {
               e.preventDefault();
               saveServer();
             }
@@ -815,14 +1113,16 @@
 
       if (window.electronAPI.onServerSwitched) {
         window.electronAPI.onServerSwitched((event, server) => {
-          showNotification(`Auto-switched to ${server.name}`, 'warning');
-          loadServers();
+          if (isAuthenticated) {
+            showNotification(`Auto-switched to ${server.name}`, 'warning');
+            loadServers();
+          }
         });
       }
 
       if (window.electronAPI.onServersUpdated) {
         window.electronAPI.onServersUpdated(() => {
-          if (isOpen) {
+          if (isOpen && isAuthenticated) {
             loadServers();
           }
         });
@@ -846,25 +1146,56 @@
         if (e.key === 'm') {
           e.preventDefault();
           toggleSidebar();
-        } else if (e.key === 'r' && isOpen) {
+        } else if (e.key === 'r' && isOpen && isAuthenticated) {
           e.preventDefault();
           checkAllServers();
         }
       }
       
-      if (e.key === 'Escape' && isOpen) {
-        closeSidebar();
+      if (e.key === 'Escape') {
+        if (isOpen) {
+          closeSidebar();
+        }
+      }
+
+      // Quick logout with Ctrl+L when sidebar is open
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l' && isOpen && isAuthenticated) {
+        e.preventDefault();
+        logout();
       }
     });
   }
 
-  // Auto-refresh status
+  // Auto-refresh status (only when authenticated)
   function setupAutoRefresh() {
     setInterval(() => {
-      if (isOpen && servers.length > 0) {
+      if (isOpen && isAuthenticated && servers.length > 0) {
         loadServers();
       }
     }, 30000);
+  }
+
+  // Session timeout (optional security feature)
+  function setupSessionTimeout() {
+    let lastActivity = Date.now();
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+    // Update last activity on user interaction
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
+
+    document.addEventListener('click', updateActivity);
+    document.addEventListener('keypress', updateActivity);
+    document.addEventListener('mousemove', updateActivity);
+
+    // Check for session timeout every minute
+    setInterval(() => {
+      if (isAuthenticated && Date.now() - lastActivity > SESSION_TIMEOUT) {
+        showNotification('Session expired. Please login again.', 'warning');
+        logout();
+      }
+    }, 60000);
   }
 
   // Initialize everything
@@ -874,8 +1205,17 @@
     setupOutsideClickHandler();
     setupKeyboardShortcuts();
     setupAutoRefresh();
+    setupSessionTimeout();
     
-    console.log('IP Manager Sidebar injected successfully');
+    console.log('IP Manager Sidebar with Authentication injected successfully');
+    
+    // Show initial focus on password field when page loads
+    setTimeout(() => {
+      const passwordInput = document.getElementById('login-password');
+      if (passwordInput && !isAuthenticated) {
+        passwordInput.focus();
+      }
+    }, 500);
   }
 
   // Start initialization

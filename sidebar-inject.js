@@ -870,6 +870,7 @@
       showNotification('Failed to switch server', 'error');
     }
   }
+   
 
   async function checkServer(serverId) {
     if (!isAuthenticated) return;
